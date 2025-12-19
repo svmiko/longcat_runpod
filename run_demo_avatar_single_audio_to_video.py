@@ -62,7 +62,7 @@ def generate(args):
     text_guidance_scale = args.text_guidance_scale
     audio_guidance_scale = args.audio_guidance_scale
     resolution = args.resolution
-    num_segments = max(1, args.num_segments)
+    num_segments = args.num_segments  # 0 = auto-calculate from audio length
     output_dir = args.output_dir
 
     # set up default inference params
@@ -82,6 +82,17 @@ def generate(args):
     prompt = input_data['prompt']
     negative_prompt = "Close-up, Bright tones, overexposed, static, blurred details, subtitles, style, works, paintings, images, static, overall gray, worst quality, low quality, JPEG compression residue, ugly, incomplete, extra fingers, poorly drawn hands, poorly drawn faces, deformed, disfigured, misshapen limbs, fused fingers, still picture, messy background, three legs, many people in the background, walking backwards"
     raw_speech_path = input_data['cond_audio']['person1']
+
+    # Auto-calculate num_segments from audio duration if not manually specified
+    audio_duration = librosa.get_duration(path=raw_speech_path)
+    if num_segments <= 0:
+        # Formula: generate_duration = num_frames/save_fps + (num_segments-1)*(num_frames-num_cond_frames)/save_fps
+        # Solving for num_segments: num_segments = 1 + (audio_duration * save_fps - num_frames) / (num_frames - num_cond_frames)
+        auto_num_segments = math.ceil(1 + (audio_duration * save_fps - num_frames) / (num_frames - num_cond_frames))
+        num_segments = max(1, auto_num_segments)
+        print(f"Audio duration: {audio_duration:.2f}s -> auto-calculated num_segments: {num_segments}")
+    else:
+        print(f"Audio duration: {audio_duration:.2f}s -> using manual num_segments: {num_segments}")
     
     # prepare distributed environment
     rank = int(os.environ['RANK'])
@@ -336,12 +347,13 @@ def _parse_args():
     parser.add_argument(
         '--num_segments',
         type=int,
-        default=1
+        default=0,
+        help='Number of segments to generate. Set to 0 (default) to auto-calculate from audio duration.'
     )
     parser.add_argument(
         '--num_inference_steps',
         type=int,
-        default=50
+        default=16
     )
     parser.add_argument(
         '--ref_img_index',
@@ -356,12 +368,12 @@ def _parse_args():
     parser.add_argument(
         '--text_guidance_scale',
         type=float,
-        default=4.0
+        default=1.0
     )
     parser.add_argument(
         '--audio_guidance_scale',
         type=float,
-        default=4.0
+        default=1.0
     )
     parser.add_argument(
         '--stage_1',

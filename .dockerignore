@@ -1,0 +1,16 @@
+# Ignore weights (download at runtime)
+weights/
+
+# Ignore git
+.git/
+
+# Ignore outputs
+outputs_avatar_single/
+audio_temp_file/
+
+# Ignore temp files
+*.pyc
+__pycache__/
+*.wav
+*.png
+*.mp4
