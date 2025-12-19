@@ -31,7 +31,7 @@ RUN pip install ninja psutil packaging
 RUN pip install flash_attn==2.7.4.post1 --no-build-isolation
 
 # Install main requirements
-RUN pip install -r requirements.txt
+RUN pip install --ignore-installed -r requirements.txt
 
 # Install avatar requirements
 RUN pip install -r requirements_avatar.txt
