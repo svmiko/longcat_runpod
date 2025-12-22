@@ -439,7 +439,7 @@ def _parse_args():
     parser.add_argument(
         "--checkpoint_dir",
         type=str,
-        default="./weights/LongCat-Video-Avatar",
+        default="/workspace/weights/LongCat-Video-Avatar",
     )
 
     args = parser.parse_args()

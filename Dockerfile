@@ -37,14 +37,14 @@ RUN pip install --ignore-installed -r requirements.txt
 RUN pip install -r requirements_avatar.txt
 
 # Install huggingface CLI for model download
-RUN pip install "huggingface_hub[cli]"
+# RUN pip install "huggingface_hub[cli]"
 
 # Create output directories
 RUN mkdir -p outputs_avatar_single audio_temp_file
 
 # Download models
-RUN huggingface-cli download meituan-longcat/LongCat-Video --local-dir ./weights/LongCat-Video
-RUN huggingface-cli download meituan-longcat/LongCat-Video-Avatar --local-dir ./weights/LongCat-Video-Avatar
+# RUN huggingface-cli download meituan-longcat/LongCat-Video --local-dir ./weights/LongCat-Video
+# RUN huggingface-cli download meituan-longcat/LongCat-Video-Avatar --local-dir ./weights/LongCat-Video-Avatar
 
 # Install RunPod
 RUN pip install runpod

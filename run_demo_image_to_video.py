@@ -174,7 +174,7 @@ def _parse_args():
     parser.add_argument(
         "--checkpoint_dir",
         type=str,
-        default=None,
+        default="/workspace/weights/LongCat-Video",
     )
     parser.add_argument(
         '--enable_compile',

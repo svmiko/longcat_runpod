@@ -68,7 +68,7 @@ def handler(job):
         "run_demo_avatar_single_audio_to_video.py",
         f"--input_json={input_json_path}",
         f"--output_dir={output_dir}",
-        f"--checkpoint_dir=./weights/LongCat-Video-Avatar",
+        f"--checkpoint_dir=/workspace/weights/LongCat-Video-Avatar",
         f"--resolution={resolution}",
         f"--num_inference_steps={num_inference_steps}",
         f"--text_guidance_scale={text_guidance_scale}",
@@ -85,7 +85,7 @@ def handler(job):
     try:
         result = subprocess.run(
             cmd,
-            cwd="/workspace/LongCat-Video",
+            cwd="/workspace/longcat_runpod",
             capture_output=True,
             text=True,
             timeout=3600  # 1 hour timeout
