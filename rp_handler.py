@@ -13,8 +13,11 @@ def handler(job):
     print(f"Current working directory: {os.getcwd()}")
     print(f"Files in /app: {os.listdir('/app') if os.path.exists('/app') else 'NOT FOUND'}")
     print(f"Files in /workspace: {os.listdir('/workspace') if os.path.exists('/workspace') else 'NOT FOUND'}")
-    print(f"Weights exist: {os.path.exists('/workspace/weights/LongCat-Video-Avatar')}")
-    print(f"Files in /workspace/weights: {os.listdir('/workspace/weights') if os.path.exists('/workspace/weights') else 'NOT FOUND'}")
+    print(f"Files in /runpod-volume: {os.listdir('/runpod-volume') if os.path.exists('/runpod-volume') else 'NOT FOUND'}")
+    print(f"Weights at /workspace/weights: {os.listdir('/workspace/weights') if os.path.exists('/workspace/weights') else 'NOT FOUND'}")
+    print(f"Weights at /runpod-volume/weights: {os.listdir('/runpod-volume/weights') if os.path.exists('/runpod-volume/weights') else 'NOT FOUND'}")
+    print(f"LongCat-Video exists at /workspace/weights: {os.path.exists('/workspace/weights/LongCat-Video')}")
+    print(f"LongCat-Video-Avatar exists at /workspace/weights: {os.path.exists('/workspace/weights/LongCat-Video-Avatar')}")
 
     job_input = job["input"]
 
@@ -75,7 +78,7 @@ def handler(job):
         "run_demo_avatar_single_audio_to_video.py",
         f"--input_json={input_json_path}",
         f"--output_dir={output_dir}",
-        f"--checkpoint_dir=/workspace/weights/LongCat-Video-Avatar",
+        f"--checkpoint_dir=/runpod-volume/weights/LongCat-Video-Avatar",
         f"--resolution={resolution}",
         f"--num_inference_steps={num_inference_steps}",
         f"--text_guidance_scale={text_guidance_scale}",
