@@ -12,8 +12,8 @@ RUN apt-get update && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
-WORKDIR /workspace/LongCat-Video
+# Set working directory (use /app to avoid conflict with /workspace network volume)
+WORKDIR /app
 
 # Copy all project files
 COPY . .

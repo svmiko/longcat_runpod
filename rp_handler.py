@@ -9,6 +9,13 @@ import runpod
 
 
 def handler(job):
+    # Debug: print current directory and list files
+    print(f"Current working directory: {os.getcwd()}")
+    print(f"Files in /app: {os.listdir('/app') if os.path.exists('/app') else 'NOT FOUND'}")
+    print(f"Files in /workspace: {os.listdir('/workspace') if os.path.exists('/workspace') else 'NOT FOUND'}")
+    print(f"Weights exist: {os.path.exists('/workspace/weights/LongCat-Video-Avatar')}")
+    print(f"Files in /workspace/weights: {os.listdir('/workspace/weights') if os.path.exists('/workspace/weights') else 'NOT FOUND'}")
+
     job_input = job["input"]
 
     # Get parameters
@@ -85,7 +92,7 @@ def handler(job):
     try:
         result = subprocess.run(
             cmd,
-            cwd="/workspace/longcat_runpod",
+            cwd="/app",
             capture_output=True,
             text=True,
             timeout=3600  # 1 hour timeout
