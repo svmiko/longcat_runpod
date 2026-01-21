@@ -8,7 +8,72 @@ import shutil
 import runpod
 
 
+def build_error_response(error_msg, error_code, job_id, metadata, start_time, **extra):
+    """Build a structured error response for webhook consumption."""
+    response = {
+        "status": "failed",
+        "error": error_msg,
+        "error_code": error_code,
+        "runpod_job_id": job_id,
+        "timing": {
+            "total_seconds": round(time.time() - start_time, 2)
+        }
+    }
+    if metadata:
+        response["metadata"] = metadata
+    response.update(extra)
+    return response
+
+
+def build_success_response(video_base64, video_filename, job_id, metadata, start_time, generation_time):
+    """Build a structured success response for webhook consumption."""
+    response = {
+        "status": "completed",
+        "video": video_base64,
+        "video_filename": video_filename,
+        "runpod_job_id": job_id,
+        "timing": {
+            "generation_seconds": round(generation_time, 2),
+            "total_seconds": round(time.time() - start_time, 2)
+        }
+    }
+    if metadata:
+        response["metadata"] = metadata
+    return response
+
+
 def handler(job):
+    """
+    RunPod serverless handler for LongCat video generation.
+
+    Supports webhooks: When a job is submitted with a webhook URL,
+    RunPod will POST this handler's return value to that URL.
+
+    Input:
+        audio (str): Base64 encoded audio (required)
+        image (str): Base64 encoded image (optional)
+        prompt (str): Text prompt (optional)
+        metadata (dict): Passthrough metadata returned in output (optional)
+            - Useful for tracking job_id, session_id, slide_index, etc.
+        ... other generation parameters
+
+    Output (on success):
+        status: "completed"
+        video: Base64 encoded MP4
+        video_filename: Output filename
+        metadata: Passthrough from input (if provided)
+        timing: Execution timing info
+        runpod_job_id: The RunPod job ID
+
+    Output (on error):
+        status: "failed"
+        error: Error message
+        error_code: Error type identifier
+        metadata: Passthrough from input (if provided)
+        runpod_job_id: The RunPod job ID
+    """
+    start_time = time.time()
+
     # Debug: print current directory and list files
     print(f"Current working directory: {os.getcwd()}")
     print(f"Files in /app: {os.listdir('/app') if os.path.exists('/app') else 'NOT FOUND'}")
@@ -20,6 +85,10 @@ def handler(job):
     print(f"LongCat-Video-Avatar exists at /workspace/weights: {os.path.exists('/workspace/weights/LongCat-Video-Avatar')}")
 
     job_input = job["input"]
+    job_id = job.get("id", str(int(time.time())))
+
+    # Extract passthrough metadata (returned unchanged in output)
+    metadata = job_input.get("metadata", {})
 
     # Get parameters
     prompt = job_input.get("prompt", "A person talking")
@@ -37,7 +106,6 @@ def handler(job):
     mask_frame_range = job_input.get("mask_frame_range", 3)
 
     # Create temp directory for this job
-    job_id = job.get("id", str(int(time.time())))
     temp_dir = f"/tmp/job_{job_id}"
     os.makedirs(temp_dir, exist_ok=True)
 
@@ -92,6 +160,7 @@ def handler(job):
     print(f"Running command: {' '.join(cmd)}")
 
     # Run the script
+    generation_start = time.time()
     try:
         result = subprocess.run(
             cmd,
@@ -100,21 +169,48 @@ def handler(job):
             text=True,
             timeout=3600  # 1 hour timeout
         )
+        generation_time = time.time() - generation_start
         print(f"STDOUT: {result.stdout}")
         print(f"STDERR: {result.stderr}")
 
         if result.returncode != 0:
-            return {"error": f"Script failed with return code {result.returncode}", "stderr": result.stderr}
+            return build_error_response(
+                error_msg=f"Script failed with return code {result.returncode}",
+                error_code="GENERATION_FAILED",
+                job_id=job_id,
+                metadata=metadata,
+                start_time=start_time,
+                stderr=result.stderr
+            )
 
     except subprocess.TimeoutExpired:
-        return {"error": "Script timed out after 1 hour"}
+        return build_error_response(
+            error_msg="Script timed out after 1 hour",
+            error_code="TIMEOUT",
+            job_id=job_id,
+            metadata=metadata,
+            start_time=start_time
+        )
     except Exception as e:
-        return {"error": str(e)}
+        return build_error_response(
+            error_msg=str(e),
+            error_code="UNEXPECTED_ERROR",
+            job_id=job_id,
+            metadata=metadata,
+            start_time=start_time
+        )
 
     # Find the output video (get the latest mp4 file)
     video_files = glob.glob(os.path.join(output_dir, "*.mp4"))
     if not video_files:
-        return {"error": "No output video found", "output_dir_contents": os.listdir(output_dir)}
+        return build_error_response(
+            error_msg="No output video found",
+            error_code="NO_OUTPUT",
+            job_id=job_id,
+            metadata=metadata,
+            start_time=start_time,
+            output_dir_contents=os.listdir(output_dir)
+        )
 
     # Get the latest video file
     latest_video = max(video_files, key=os.path.getmtime)
@@ -127,10 +223,14 @@ def handler(job):
     # Cleanup temp directory
     shutil.rmtree(temp_dir, ignore_errors=True)
 
-    return {
-        "video": video_base64,
-        "video_filename": os.path.basename(latest_video)
-    }
+    return build_success_response(
+        video_base64=video_base64,
+        video_filename=os.path.basename(latest_video),
+        job_id=job_id,
+        metadata=metadata,
+        start_time=start_time,
+        generation_time=generation_time
+    )
 
 
 # Start RunPod handler
